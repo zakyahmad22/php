@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake Game</title>
+    <style>
+        body {
+            background: linear-gradient(135deg, #2b5876, #4e4376);
+            /* Gradien latar belakang */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            flex-direction: column;
+            color: #fff;
+        }
+
+        h1 {
+            font-size: 48px;
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: 600;
+            text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.6);
+            /* Efek bayangan untuk judul */
+        }
+
+        canvas {
+            border: 6px solid #fff;
+            border-radius: 10px;
+            background-color: #222;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+            /* Efek bayangan untuk canvas */
+        }
+
+        .control-info {
+            margin-top: 20px;
+            color: #fff;
+            font-size: 18px;
+            text-align: center;
+        }
+
+        .control-info p {
+            margin: 5px;
+            font-weight: 300;
+        }
+
+        .control-info p strong {
+            font-weight: bold;
+        }
+
+        /* Animasi untuk teks Game Over */
+        @keyframes fadeIn {
+            0% {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Snake Game</h1>
+    <canvas id="gameCanvas" width="400" height="400"></canvas>
+    <div class="control-info">
+        <p><strong>Controls:</strong></p>
+        <p>Use Arrow Keys to Move</p>
+        <p>Press "R" to Restart Game</p>
+    </div>
+
+    <script>
+        // Game setup
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const gridSize = 20;
+        const rows = canvas.height / gridSize;
+        const cols = canvas.width / gridSize;
+        let snake, food, direction, newDirection, gameOver, score;
+
+        // Initialize game
+        function initGame() {
+            snake = [{ x: 10, y: 10 }];
+            food = { x: Math.floor(Math.random() * cols), y: Math.floor(Math.random() * rows) };
+            direction = { x: 1, y: 0 };
+            newDirection = { x: 1, y: 0 };
+            gameOver = false;
+            score = 0;
+        }
+
+        // Draw the snake and food
+        function drawRect(x, y, color) {
+            ctx.fillStyle = color;
+            ctx.fillRect(x * gridSize, y * gridSize, gridSize, gridSize);
+        }
+
+        // Draw the snake's head with eyes
+        function drawSnakeHead(x, y) {
+            // Draw head
+            drawRect(x, y, "green");
+
+            // Draw eyes
+            ctx.fillStyle = "white";
+            ctx.beginPath();
+            ctx.arc((x * gridSize) + 5, (y * gridSize) + 5, 3, 0, 2 * Math.PI); // Left eye
+            ctx.arc((x * gridSize) + 15, (y * gridSize) + 5, 3, 0, 2 * Math.PI); // Right eye
+            ctx.fill();
+
+            // Draw pupils
+            ctx.fillStyle = "black";
+            ctx.beginPath();
+            ctx.arc((x * gridSize) + 5, (y * gridSize) + 5, 1.5, 0, 2 * Math.PI); // Left pupil
+            ctx.arc((x * gridSize) + 15, (y * gridSize) + 5, 1.5, 0, 2 * Math.PI); // Right pupil
+            ctx.fill();
+        }
+
+        // Draw the score on the canvas
+        function drawScore() {
+            ctx.fillStyle = "#fff";
+            ctx.font = "24px Arial";
+            ctx.fillText("Score: " + score, 10, 30);
+        }
+
+        // Draw game over message
+        function drawGameOver() {
+            ctx.fillStyle = "red";
+            ctx.font = "36px Arial";
+            ctx.fillText("Game Over!", 100, 200);
+            ctx.font = "24px Arial";
+            ctx.fillText("Press R to Restart", 120, 240);
+        }
+
+        // Game loop
+        function update() {
+            if (gameOver) return;
+
+            // Update direction
+            direction = newDirection;
+
+            // Move snake
+            const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
+
+            // Check for collisions with walls
+            if (head.x < 0 || head.x >= cols || head.y < 0 || head.y >= rows) {
+                gameOver = true;
+                return;
+            }
+
+            // Check for collisions with itself
+            for (let segment of snake) {
+                if (segment.x === head.x && segment.y === head.y) {
+                    gameOver = true;
+                    return;
+                }
+            }
+
+            // Add new head to snake
+            snake.unshift(head);
+
+            // Check if food is eaten
+            if (head.x === food.x && head.y === food.y) {
+                food = { x: Math.floor(Math.random() * cols), y: Math.floor(Math.random() * rows) };
+                score++;
+            } else {
+                // Remove tail
+                snake.pop();
+            }
+        }
+
+        function draw() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw food
+            drawRect(food.x, food.y, "red");
+
+            // Draw snake's head and body
+            drawSnakeHead(snake[0].x, snake[0].y);
+            for (let i = 1; i < snake.length; i++) {
+                drawRect(snake[i].x, snake[i].y, "green");
+            }
+
+            // Draw score
+            drawScore();
+
+            // Draw Game Over message if game is over
+            if (gameOver) {
+                drawGameOver();
+            }
+        }
+
+        function gameLoop() {
+            update();
+            draw();
+            if (!gameOver) {
+                setTimeout(gameLoop, 150); // Adjust speed here
+            }
+        }
+
+        // Keyboard controls
+        document.addEventListener("keydown", (e) => {
+            if (gameOver && e.key === "r") {
+                // Restart game on pressing 'R'
+                initGame();
+                gameLoop();
+                return;
+            }
+
+            // Change direction based on key press
+            switch (e.key) {
+                case "ArrowUp":
+                    if (direction.y === 0) newDirection = { x: 0, y: -1 };
+                    break;
+                case "ArrowDown":
+                    if (direction.y === 0) newDirection = { x: 0, y: 1 };
+                    break;
+                case "ArrowLeft":
+                    if (direction.x === 0) newDirection = { x: -1, y: 0 };
+                    break;
+                case "ArrowRight":
+                    if (direction.x === 0) newDirection = { x: 1, y: 0 };
+                    break;
+            }
+        });
+
+        // Initialize and start the game
+        initGame();
+        gameLoop();
+    </script>
+</body>
+
+</html>
